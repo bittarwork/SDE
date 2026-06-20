@@ -22,6 +22,7 @@
       --border-strong: rgba(148,163,184,.28);
       --text: #f8fafc;
       --muted: #94a3b8;
+      --radius-lg: 20px;
       --radius: 16px;
       --radius-sm: 12px;
       --radius-xs: 8px;
@@ -34,10 +35,10 @@
       --warning: #f59e0b;
       --danger: #ef4444;
       --header-offset: 72px;
+      --topbar-h: 60px;
       --bottom-nav-h: 0px;
-      --rail-w: 76px;
-      --sidebar-w: 280px;
-      --page-max: 860px;
+      --sidebar-w: 270px;
+      --shell-max: 1180px;
       --page-gutter: 1rem;
       --transition: .28s cubic-bezier(.4,0,.2,1);
       --font: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif;
@@ -91,54 +92,56 @@
       box-shadow:0 0 12px var(--ch-glow);
     }
 
-    /* ── App shell ── */
-    .app-shell {
-      display:grid;
-      min-height:100vh;
-      grid-template-columns:1fr;
-      grid-template-rows:auto 1fr auto;
-    }
-
     /* ── Top bar ── */
     .topbar {
-      position:sticky; top:0; z-index:200;
-      background:rgba(7,11,20,.82);
+      position:sticky; top:0; z-index:300;
+      background:rgba(7,11,20,.85);
       backdrop-filter:var(--glass);
       border-bottom:1px solid var(--border);
     }
     .topbar-inner {
-      display:flex; align-items:center; gap:.65rem;
-      padding:.65rem var(--page-gutter);
-      max-width:calc(var(--page-max) + var(--sidebar-w) + var(--rail-w) + 4rem);
-      margin:0 auto;
+      display:flex; align-items:center; gap:.55rem;
+      padding:.55rem var(--page-gutter);
+      max-width:var(--shell-max); margin:0 auto;
     }
-    .brand-compact { flex:1; min-width:0; }
-    .brand-compact h1 {
-      font-size:1rem; font-weight:800; letter-spacing:-.02em;
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    .topbar-spacer { flex:1; }
+
+    .brand {
+      display:inline-flex; align-items:center; gap:.6rem;
+      background:none; border:none; cursor:pointer; color:var(--text);
+      font-family:inherit; padding:.2rem; border-radius:var(--radius-sm);
+      transition:var(--transition); flex-shrink:0;
+    }
+    .brand:hover { opacity:.82; }
+    .brand:active { transform:scale(.97); }
+    .brand-logo {
+      width:40px; height:40px; border-radius:12px; flex-shrink:0;
+      display:grid; place-items:center; font-size:1.2rem;
       background:linear-gradient(135deg,var(--ch-accent),var(--ch-accent2));
-      -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+      box-shadow:0 4px 16px var(--ch-glow);
     }
-    .brand-compact p {
-      font-size:.72rem; color:var(--muted);
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    .brand-text { display:flex; flex-direction:column; line-height:1.15; text-align:right; }
+    .brand-text strong { font-size:1rem; font-weight:800; letter-spacing:-.01em; }
+    .brand-text small { font-size:.64rem; color:var(--muted); letter-spacing:.12em; }
+
+    /* Chapter quick switch (in topbar, chapter screen only) */
+    .chapter-quick { min-width:0; flex-shrink:1; }
+    .chapter-quick-btn {
+      display:inline-flex; align-items:center; gap:.45rem; max-width:100%;
+      padding:.42rem .7rem; border-radius:999px;
+      border:1px solid var(--border-strong); background:var(--surface2);
+      color:var(--text); font-family:inherit; font-size:.8rem; font-weight:600;
+      cursor:pointer; transition:var(--transition); min-height:40px;
     }
-    .chapter-picker-btn {
-      display:inline-flex; align-items:center; gap:.45rem;
-      padding:.5rem .85rem; border-radius:999px;
-      border:1px solid var(--border-strong);
-      background:var(--surface2); color:var(--text);
-      font-family:inherit; font-size:.78rem; font-weight:600;
-      cursor:pointer; transition:var(--transition); flex-shrink:0;
-      min-height:40px;
-    }
-    .chapter-picker-btn:hover { border-color:var(--ch-accent); background:var(--ch-glow); }
-    .chapter-picker-btn .ch-badge {
-      width:24px; height:24px; border-radius:50%;
+    .chapter-quick-btn:hover { border-color:var(--ch-accent); background:var(--ch-glow); }
+    .chapter-quick-btn .ch-badge {
+      width:24px; height:24px; border-radius:50%; flex-shrink:0;
       background:linear-gradient(135deg,var(--ch-accent),var(--ch-accent2));
-      color:#fff; font-size:.7rem; font-weight:800;
-      display:grid; place-items:center;
+      color:#fff; font-size:.7rem; font-weight:800; display:grid; place-items:center;
     }
+    #chapterQuickTitle { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .chapter-quick-btn .chev { font-size:.62rem; color:var(--muted); flex-shrink:0; }
+
     .icon-btn {
       width:40px; height:40px; flex-shrink:0;
       border:1px solid var(--border); border-radius:var(--radius-xs);
@@ -149,19 +152,20 @@
     .icon-btn:hover { border-color:var(--ch-accent); background:var(--ch-glow); }
     .icon-btn.active { background:var(--ch-accent); border-color:var(--ch-accent); color:#fff; }
 
+    /* Screen toggling */
+    body[data-screen="home"] .chapter-only { display:none !important; }
+    body[data-screen="home"] #chapterScreen { display:none; }
+    body[data-screen="chapter"] #homeScreen { display:none; }
+
     /* Search panel */
     .search-panel {
       max-height:0; overflow:hidden; transition:max-height var(--transition);
       border-top:1px solid transparent;
     }
-    .search-panel.open {
-      max-height:80px;
-      border-top-color:var(--border);
-    }
+    .search-panel.open { max-height:80px; border-top-color:var(--border); }
     .search-panel-inner {
       padding:.65rem var(--page-gutter) .85rem;
-      max-width:calc(var(--page-max) + var(--sidebar-w) + var(--rail-w) + 4rem);
-      margin:0 auto;
+      max-width:var(--shell-max); margin:0 auto;
     }
     .search-wrap { position:relative; }
     .search-wrap input {
@@ -171,98 +175,208 @@
       font-family:inherit; font-size:.9rem; outline:none;
       transition:border-color var(--transition), box-shadow var(--transition);
     }
-    .search-wrap input:focus {
-      border-color:var(--ch-accent);
-      box-shadow:0 0 0 3px var(--ch-glow);
-    }
+    .search-wrap input:focus { border-color:var(--ch-accent); box-shadow:0 0 0 3px var(--ch-glow); }
     .search-wrap svg {
       position:absolute; right:.85rem; top:50%; transform:translateY(-50%);
       opacity:.45; width:18px; height:18px;
     }
 
-    /* Desktop toolbar */
-    .desktop-toolbar {
-      display:none;
-      padding:0 var(--page-gutter) .85rem;
-      max-width:calc(var(--page-max) + var(--sidebar-w) + var(--rail-w) + 4rem);
-      margin:0 auto;
-      gap:.5rem; align-items:center; flex-wrap:wrap;
+    /* ── Home dashboard ── */
+    .home-screen {
+      max-width:var(--shell-max); margin:0 auto;
+      padding:1.25rem var(--page-gutter) calc(2.5rem + var(--bottom-nav-h) + env(safe-area-inset-bottom, 0));
     }
-    .view-tabs { display:flex; gap:.35rem; flex-wrap:wrap; }
-    .toolbar-actions { display:flex; gap:.4rem; margin-right:auto; flex-wrap:wrap; }
+    .home-hero {
+      position:relative; overflow:hidden;
+      border:1px solid var(--border-strong); border-radius:var(--radius-lg);
+      background:linear-gradient(135deg, rgba(59,130,246,.16), rgba(139,92,246,.10) 55%, rgba(6,182,212,.12));
+      padding:1.85rem 1.6rem; margin-bottom:1.6rem;
+    }
+    .home-hero::after {
+      content:""; position:absolute; inset:0; pointer-events:none;
+      background:radial-gradient(circle at 88% -30%, rgba(59,130,246,.30), transparent 55%);
+    }
+    .home-hero-tag {
+      display:inline-flex; align-items:center; gap:.4rem; margin-bottom:.7rem;
+      padding:.3rem .7rem; border-radius:999px; font-size:.7rem; font-weight:700;
+      background:rgba(255,255,255,.08); border:1px solid var(--border); color:#bfdbfe;
+    }
+    .home-hero h1 { position:relative; font-size:1.7rem; font-weight:800; letter-spacing:-.02em; margin-bottom:.45rem; }
+    .home-hero p { position:relative; color:var(--muted); font-size:.92rem; max-width:62ch; line-height:1.7; }
+    .home-hero-stats { position:relative; display:flex; flex-wrap:wrap; gap:.6rem; margin-top:1.2rem; }
+    .hero-chip {
+      display:inline-flex; align-items:center; gap:.4rem; padding:.45rem .85rem;
+      border-radius:999px; background:rgba(255,255,255,.06); border:1px solid var(--border);
+      font-size:.78rem; font-weight:600;
+    }
+    .hero-progress { position:relative; margin-top:1.25rem; max-width:520px; }
+    .hero-progress-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:.45rem; }
+    .hero-progress-head span:first-child { font-size:.8rem; color:var(--muted); }
+    .hero-progress-head strong { font-size:1.05rem; font-weight:800; color:#7dd3fc; }
+    .hero-progress-track { height:9px; border-radius:999px; background:rgba(0,0,0,.4); overflow:hidden; }
+    .hero-progress-bar { height:100%; border-radius:999px; background:linear-gradient(90deg,#3b82f6,#06b6d4,#22c55e); transition:width .6s cubic-bezier(.4,0,.2,1); }
 
-    .vtab, .action-btn {
-      padding:.55rem 1rem; border:1px solid var(--border); border-radius:var(--radius-sm);
+    .home-section-head { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin:0 .15rem 1rem; }
+    .home-section-head h2 { font-size:1.15rem; font-weight:700; display:flex; align-items:center; gap:.5rem; }
+    .home-section-head h2::before { content:""; width:4px; height:1.2rem; border-radius:2px; background:linear-gradient(180deg,var(--ch-accent),var(--ch-accent2)); }
+    .home-section-head .count-pill { font-size:.74rem; color:var(--muted); padding:.25rem .7rem; border-radius:999px; border:1px solid var(--border); background:var(--surface); }
+
+    .chapter-cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(290px,1fr)); gap:1rem; }
+    .chapter-card {
+      position:relative; overflow:hidden; cursor:pointer; text-align:right;
+      border:1px solid var(--border); border-radius:var(--radius-lg);
+      background:var(--surface); backdrop-filter:var(--glass);
+      padding:1.2rem 1.25rem 1.1rem; transition:var(--transition);
+      display:flex; flex-direction:column; gap:.95rem;
+    }
+    .chapter-card::before {
+      content:""; position:absolute; top:0; bottom:0; right:0; width:4px;
+      background:linear-gradient(180deg,var(--ch-accent),var(--ch-accent2));
+    }
+    .chapter-card::after {
+      content:""; position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity var(--transition);
+      background:radial-gradient(circle at 100% 0%, var(--ch-glow), transparent 60%);
+    }
+    .chapter-card:hover { transform:translateY(-4px); border-color:var(--ch-accent); box-shadow:0 16px 40px rgba(0,0,0,.45); }
+    .chapter-card:hover::after { opacity:1; }
+    .chapter-card:active { transform:translateY(-1px); }
+    .chapter-card-top { position:relative; display:flex; align-items:flex-start; gap:.85rem; }
+    .chapter-card-badge {
+      width:50px; height:50px; border-radius:15px; flex-shrink:0; position:relative;
+      display:grid; place-items:center; font-size:1.45rem;
+      background:var(--ch-glow); border:1px solid var(--ch-accent);
+    }
+    .chapter-card-badge .ch-no {
+      position:absolute; bottom:-7px; left:-7px; width:23px; height:23px; border-radius:50%;
+      background:linear-gradient(135deg,var(--ch-accent),var(--ch-accent2)); color:#fff;
+      font-size:.72rem; font-weight:800; display:grid; place-items:center;
+      border:2px solid var(--surface-solid);
+    }
+    .chapter-card-head { flex:1; min-width:0; }
+    .chapter-card-head h3 { font-size:1.02rem; font-weight:700; line-height:1.4; }
+    .chapter-card-head p { font-size:.78rem; color:var(--muted); margin-top:.3rem; line-height:1.55; }
+    .chapter-card-meta { position:relative; display:flex; flex-wrap:wrap; gap:.4rem; }
+    .cc-chip {
+      display:inline-flex; align-items:center; gap:.3rem; padding:.3rem .6rem;
+      border-radius:8px; background:var(--surface2); border:1px solid var(--border);
+      font-size:.7rem; color:#cbd5e1; font-weight:600;
+    }
+    .chapter-card-foot { position:relative; display:flex; align-items:center; gap:.65rem; margin-top:auto; }
+    .cc-prog-track { flex:1; height:6px; border-radius:999px; background:var(--surface3); overflow:hidden; }
+    .cc-prog-bar { height:100%; border-radius:999px; background:linear-gradient(90deg,var(--ch-accent),var(--ch-accent2)); transition:width .5s ease; }
+    .cc-prog-val { font-size:.74rem; font-weight:800; color:var(--ch-accent2); min-width:32px; text-align:left; }
+
+    /* ── Chapter screen header bar ── */
+    .chapter-bar {
+      position:sticky; top:var(--topbar-h); z-index:200;
+      background:rgba(7,11,20,.85); backdrop-filter:var(--glass);
+      border-bottom:1px solid var(--border);
+    }
+    .chapter-bar-inner {
+      display:flex; align-items:center; gap:.7rem;
+      padding:.6rem var(--page-gutter);
+      max-width:var(--shell-max); margin:0 auto;
+    }
+    .back-btn {
+      display:inline-flex; align-items:center; gap:.4rem; flex-shrink:0;
+      padding:.5rem .8rem; border-radius:999px;
+      border:1px solid var(--border); background:var(--surface); color:var(--text);
+      font-family:inherit; font-size:.8rem; font-weight:600; cursor:pointer;
+      transition:var(--transition); min-height:40px;
+    }
+    .back-btn:hover { border-color:var(--ch-accent); background:var(--ch-glow); }
+    .chapter-bar-title { display:none; align-items:center; gap:.6rem; min-width:0; }
+    .cbt-badge {
+      width:34px; height:34px; border-radius:10px; flex-shrink:0;
+      background:linear-gradient(135deg,var(--ch-accent),var(--ch-accent2)); color:#fff;
+      font-size:.9rem; font-weight:800; display:grid; place-items:center;
+    }
+    .cbt-text { display:flex; flex-direction:column; line-height:1.2; min-width:0; }
+    .cbt-text strong { font-size:.92rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .cbt-text small { font-size:.68rem; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    .view-tabs {
+      display:flex; gap:.25rem; background:var(--surface3);
+      padding:.28rem; border-radius:999px; overflow-x:auto;
+      scrollbar-width:none; -webkit-overflow-scrolling:touch;
+    }
+    .view-tabs::-webkit-scrollbar { display:none; }
+    .view-tabs .vtab {
+      display:inline-flex; align-items:center; gap:.35rem; white-space:nowrap;
+      padding:.5rem .9rem; border:none; border-radius:999px; background:transparent;
+      color:var(--muted); cursor:pointer; font-family:inherit; font-size:.82rem; font-weight:600;
+      transition:var(--transition); min-height:38px;
+    }
+    .view-tabs .vtab:hover { color:var(--text); }
+    .view-tabs .vtab.active {
+      background:linear-gradient(135deg,var(--ch-accent),var(--ch-accent2)); color:#fff;
+      box-shadow:0 4px 14px var(--ch-glow);
+    }
+
+    .chapter-tools { position:relative; margin-right:auto; flex-shrink:0; }
+    .action-btn {
+      padding:.5rem .9rem; border:1px solid var(--border); border-radius:var(--radius-sm);
       background:var(--surface); color:var(--muted); cursor:pointer;
-      font-family:inherit; font-size:.82rem; font-weight:600;
-      transition:var(--transition);
-      display:inline-flex; align-items:center; gap:.4rem;
-      min-height:42px;
+      font-family:inherit; font-size:.82rem; font-weight:600; transition:var(--transition);
+      display:inline-flex; align-items:center; gap:.4rem; min-height:40px;
     }
-    .vtab:hover, .action-btn:hover { border-color:var(--ch-accent); color:var(--text); }
-    .vtab.active {
-      background:linear-gradient(135deg,var(--ch-accent),var(--ch-accent2));
-      border-color:transparent; color:#fff;
-      box-shadow:0 4px 16px var(--ch-glow);
-    }
+    .action-btn:hover { border-color:var(--ch-accent); color:var(--text); }
     .action-btn.danger-btn { border-color:rgba(239,68,68,.4); color:#fca5a5; }
     .action-btn.danger-btn:hover { background:rgba(239,68,68,.12); }
+    .tools-menu {
+      position:absolute; top:calc(100% + .45rem); left:0;
+      background:var(--surface-solid); border:1px solid var(--border);
+      border-radius:var(--radius); padding:.4rem; min-width:205px;
+      box-shadow:var(--shadow); z-index:60;
+      display:flex; flex-direction:column; gap:.15rem;
+      visibility:hidden; opacity:0; transform:translateY(-6px) scale(.97);
+      transform-origin:top left; transition:var(--transition);
+    }
+    .tools-menu.open { visibility:visible; opacity:1; transform:none; }
+    .tools-menu .action-btn { width:100%; justify-content:flex-start; border:none; background:transparent; }
+    .tools-menu .action-btn:hover { background:var(--ch-glow); }
 
     /* ── Stats strip ── */
     .stats-bar {
-      display:flex; gap:.5rem; overflow-x:auto;
-      padding:.75rem var(--page-gutter);
-      scrollbar-width:none; -webkit-overflow-scrolling:touch;
-      max-width:calc(var(--page-max) + var(--sidebar-w) + var(--rail-w) + 4rem);
-      margin:0 auto;
+      display:grid; grid-template-columns:repeat(4,1fr); gap:.6rem;
+      padding:1rem var(--page-gutter) .25rem;
+      max-width:var(--shell-max); margin:0 auto;
     }
-    .stats-bar::-webkit-scrollbar { display:none; }
     .stat-card {
-      flex:1; min-width:130px;
       background:var(--surface); border:1px solid var(--border);
-      border-radius:var(--radius-sm); padding:.7rem .9rem;
-      display:flex; align-items:center; gap:.65rem;
-      backdrop-filter:var(--glass);
+      border-radius:var(--radius-sm); padding:.7rem .85rem;
+      display:flex; align-items:center; gap:.6rem; backdrop-filter:var(--glass); min-width:0;
     }
     .stat-icon {
-      width:38px; height:38px; border-radius:var(--radius-xs);
+      width:36px; height:36px; border-radius:var(--radius-xs); flex-shrink:0;
       background:var(--ch-glow); color:var(--ch-accent);
-      display:grid; place-items:center; font-size:1.05rem; flex-shrink:0;
+      display:grid; place-items:center; font-size:1rem;
     }
-    .stat-val { font-size:1.15rem; font-weight:800; line-height:1.15; }
-    .stat-lbl { font-size:.68rem; color:var(--muted); margin-top:.1rem; }
+    .stat-val { font-size:1.1rem; font-weight:800; line-height:1.15; }
+    .stat-lbl { font-size:.66rem; color:var(--muted); margin-top:.1rem; }
 
     /* ── Main layout ── */
     .layout {
-      display:grid; grid-template-columns:1fr;
-      gap:0;
-      max-width:calc(var(--page-max) + var(--sidebar-w) + var(--rail-w) + 4rem);
-      margin:0 auto;
-      padding:0 var(--page-gutter) calc(1.5rem + env(safe-area-inset-bottom, 0));
-    }
-
-    /* Chapter rail — desktop only */
-    .chapter-rail {
-      display:none;
+      display:grid; grid-template-columns:1fr; gap:0;
+      max-width:var(--shell-max); margin:0 auto;
+      padding:1rem var(--page-gutter) 0;
     }
 
     /* TOC sidebar */
-    .sidebar {
-      display:none;
-    }
-    .menu-toggle { display:inline-grid; }
+    .sidebar { display:none; }
+    .menu-toggle { display:grid; }
 
     /* Mobile TOC drawer */
     @media (max-width:1023px) {
       .sidebar {
         display:block;
-        position:fixed; top:0; right:-100%; width:min(320px,90vw);
+        position:fixed; top:0; right:-100%; width:min(320px,88vw);
         height:100dvh; z-index:350;
         background:var(--surface-solid);
         border-left:1px solid var(--border);
         transition:right var(--transition);
         overflow-y:auto;
-        padding:calc(var(--header-offset) + 1rem) 1.25rem 2rem;
+        padding:calc(var(--topbar-h) + 1rem) 1.25rem 2rem;
         box-shadow:-12px 0 48px rgba(0,0,0,.5);
       }
       .sidebar.open { right:0; }
@@ -654,7 +768,7 @@
       color:var(--success); transform:rotateY(180deg); font-size:.86rem;
     }
 
-    /* Chapter buttons — shared */
+    /* Chapter buttons — used in the quick-switch sheet */
     .ch-btn {
       border:1px solid var(--border); background:var(--surface);
       color:var(--muted); cursor:pointer; font-family:inherit;
@@ -674,38 +788,38 @@
     }
     .ch-btn.active .ch-num { background:rgba(255,255,255,.25); }
 
+    /* View tabs flex behaviour inside the chapter bar */
+    .view-tabs { flex:1 1 auto; min-width:0; }
+
     /* ── Mobile bottom nav ── */
     .bottom-nav {
       display:flex; position:fixed; bottom:0; left:0; right:0; z-index:250;
-      background:rgba(7,11,20,.92); backdrop-filter:var(--glass);
+      background:rgba(7,11,20,.94); backdrop-filter:var(--glass);
       border-top:1px solid var(--border);
-      padding:.45rem .35rem calc(.45rem + env(safe-area-inset-bottom, 0));
+      padding:.4rem .25rem calc(.4rem + env(safe-area-inset-bottom, 0));
       justify-content:space-around; align-items:stretch;
     }
-    .bottom-nav .vtab {
-      flex:1; flex-direction:column; gap:.2rem;
+    .bottom-nav .vtab, .bottom-nav .bn-btn {
+      flex:1; display:flex; flex-direction:column; align-items:center; gap:.18rem;
       border:none; background:transparent; border-radius:var(--radius-xs);
-      padding:.45rem .25rem; min-height:56px; font-size:.65rem;
-      color:var(--muted); max-width:88px;
+      padding:.4rem .2rem; min-height:54px; font-size:.64rem; font-weight:600;
+      color:var(--muted); cursor:pointer; font-family:inherit; max-width:84px;
+      transition:var(--transition);
     }
-    .bottom-nav .vtab .nav-icon { font-size:1.25rem; line-height:1; }
-    .bottom-nav .vtab.active {
+    .bottom-nav .nav-icon { font-size:1.2rem; line-height:1; }
+    .bottom-nav .vtab.active, .bottom-nav .bn-btn.active {
       background:var(--ch-glow); color:var(--ch-accent);
-      box-shadow:none;
     }
-    .bottom-nav .vtab.active .nav-icon { transform:scale(1.08); }
+    .bottom-nav .vtab.active .nav-icon, .bottom-nav .bn-btn.active .nav-icon { transform:scale(1.1); }
 
-    /* ── Chapter sheet (mobile) ── */
+    /* ── Chapter quick-switch sheet ── */
     .chapter-sheet {
       position:fixed; inset:0; z-index:400;
       display:flex; flex-direction:column; justify-content:flex-end;
       pointer-events:none; opacity:0; transition:opacity var(--transition);
     }
     .chapter-sheet.open { pointer-events:auto; opacity:1; }
-    .chapter-sheet-backdrop {
-      position:absolute; inset:0; background:rgba(0,0,0,.65);
-      backdrop-filter:blur(4px);
-    }
+    .chapter-sheet-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.65); backdrop-filter:blur(4px); }
     .chapter-sheet-panel {
       position:relative; background:var(--surface-solid);
       border-radius:var(--radius) var(--radius) 0 0;
@@ -715,45 +829,27 @@
       transform:translateY(100%); transition:transform var(--transition);
     }
     .chapter-sheet.open .chapter-sheet-panel { transform:translateY(0); }
-    .sheet-handle {
-      width:40px; height:4px; background:var(--border-strong);
-      border-radius:999px; margin:0 auto 1rem;
-    }
+    .sheet-handle { width:40px; height:4px; background:var(--border-strong); border-radius:999px; margin:0 auto 1rem; }
     .sheet-title { font-size:1rem; font-weight:700; margin-bottom:1rem; text-align:center; }
-    .chapter-grid {
-      display:grid; grid-template-columns:repeat(3,1fr); gap:.55rem;
-    }
+    .chapter-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:.55rem; }
     .chapter-grid .ch-btn {
       flex-direction:column; gap:.35rem; padding:.85rem .5rem;
       border-radius:var(--radius-sm); min-height:auto; white-space:normal;
       text-align:center; font-size:.78rem;
     }
     .chapter-grid .ch-num { width:32px; height:32px; font-size:.85rem; }
-    .chapter-grid .ch-label { display:block !important; font-size:.72rem; line-height:1.3; }
+    .chapter-grid .ch-label { display:block; font-size:.72rem; line-height:1.3; }
 
-    /* Hidden chapter switch for JS */
-    .chapter-switch-hidden { display:none; }
-
-    /* Action menu — mobile only */
-    .action-menu {
-      position:fixed; bottom:calc(var(--bottom-nav-h) + 12px); left:1rem;
-      background:var(--surface-solid); border:1px solid var(--border);
-      border-radius:var(--radius); padding:.5rem; z-index:260;
-      box-shadow:var(--shadow); min-width:180px;
-      visibility:hidden; opacity:0; pointer-events:none;
-      transform:scale(.92) translateY(8px);
-      transition:var(--transition); transform-origin:bottom left;
+    /* Center the sheet as a modal on wide screens */
+    @media (min-width:1024px) {
+      .chapter-sheet { justify-content:center; align-items:center; padding:2rem; }
+      .chapter-sheet-panel {
+        border-radius:var(--radius-lg); border:1px solid var(--border);
+        max-width:560px; width:100%; transform:translateY(16px) scale(.97);
+      }
+      .chapter-sheet.open .chapter-sheet-panel { transform:none; }
+      .sheet-handle { display:none; }
     }
-    .action-menu.open {
-      visibility:visible; opacity:1; pointer-events:auto;
-      transform:none;
-    }
-    .action-menu .action-btn {
-      width:100%; justify-content:flex-start; border:none; background:transparent;
-      border-radius:var(--radius-xs); margin-bottom:.15rem;
-    }
-    .action-menu .action-btn:last-child { margin-bottom:0; }
-    .action-menu .action-btn:hover { background:var(--ch-glow); }
 
     /* FAB */
     .fab {
@@ -771,7 +867,7 @@
     .footer {
       text-align:center; padding:1.5rem var(--page-gutter);
       color:var(--muted); font-size:.75rem; border-top:1px solid var(--border);
-      margin-top:1rem;
+      margin-top:1.5rem;
     }
 
     body.nav-open { overflow:hidden; touch-action:none; }
@@ -780,24 +876,20 @@
     @media (min-width:1024px) {
       :root {
         --bottom-nav-h: 0px;
-        --page-max: 780px;
-        --page-gutter: 1.35rem;
-        --header-offset: 130px;
+        --page-gutter: 1.5rem;
+        --header-offset: 124px;
       }
-      .brand-compact h1 { font-size:1.25rem; }
-      .brand-compact p { font-size:.82rem; }
-      .chapter-picker-btn { display:none; }
-      .desktop-toolbar { display:flex; }
       .bottom-nav { display:none; }
-      .action-menu { display:none !important; }
-      .action-menu-trigger { display:none; }
       .menu-toggle { display:none !important; }
+      .back-btn .back-btn-label { display:inline; }
+      .chapter-bar-title { display:flex; flex:1 1 auto; }
+      .view-tabs { flex:0 1 auto; }
 
       .layout {
-        grid-template-columns:var(--sidebar-w) 1fr var(--rail-w);
-        gap:1.25rem; align-items:start;
+        grid-template-columns:var(--sidebar-w) 1fr;
+        gap:1.5rem; align-items:start;
+        padding-bottom:1.5rem;
       }
-
       .sidebar {
         display:block; position:sticky;
         top:calc(var(--header-offset) + 8px);
@@ -810,36 +902,20 @@
         border-radius:var(--radius); padding:1.1rem;
         backdrop-filter:var(--glass);
       }
-
-      .chapter-rail {
-        display:flex; flex-direction:column; gap:.35rem;
-        position:sticky; top:calc(var(--header-offset) + 8px);
-        align-self:start;
-      }
-      .chapter-rail-label {
-        font-size:.62rem; text-transform:uppercase; letter-spacing:.1em;
-        color:var(--muted); text-align:center; margin-bottom:.35rem;
-      }
-      .chapter-rail .ch-btn {
-        width:100%; flex-direction:column; gap:.25rem;
-        padding:.65rem .35rem; border-radius:var(--radius-sm);
-        min-height:auto; font-size:.68rem;
-      }
-      .chapter-rail .ch-num { width:36px; height:36px; font-size:.85rem; }
-      .chapter-rail .ch-label { display:none; }
-      .chapter-rail .ch-btn.active .ch-label { display:none; }
-
       .section { padding:1.5rem 1.65rem; }
       .section h2 { font-size:1.2rem; }
     }
 
     @media (min-width:1280px) {
-      :root { --page-max:840px; --sidebar-w:300px; --rail-w:80px; }
+      :root { --sidebar-w:290px; }
     }
 
-    /* ── Mobile tweaks ── */
+    /* ── Mobile / tablet tweaks ── */
     @media (max-width:1023px) {
-      :root { --bottom-nav-h:68px; --header-offset:56px; }
+      :root { --bottom-nav-h:66px; }
+      .stats-bar { grid-template-columns:repeat(2,1fr); }
+      .layout { padding-bottom:0; }
+      .back-btn .back-btn-label { display:none; }
       .section { padding:1.1rem 1.15rem; }
       .section h2 { font-size:1.02rem; }
       .quiz-mode-bar { flex-direction:column; align-items:stretch; }
@@ -851,26 +927,24 @@
       .cmap-row-2 .cmap-node, .cmap-row-3 .cmap-node, .cmap-row-4 .cmap-node { max-width:100%; min-width:0; }
       .cmap-kdd-flow { flex-direction:column; align-items:stretch; }
       .cmap-kdd-step { width:100%; }
-      .desktop-toolbar { display:none; }
     }
 
     @media (max-width:599px) {
       :root { --page-gutter:.85rem; }
-      .chapter-grid { grid-template-columns:repeat(3,1fr); gap:.4rem; }
-      .stat-card { min-width:115px; }
+      .chapter-cards { grid-template-columns:1fr; }
+      .home-hero h1 { font-size:1.4rem; }
+      .chapter-grid { gap:.4rem; }
+      .tools-menu { left:auto; right:0; }
     }
 
     @media (hover:none) and (pointer:coarse) {
       .nav-list a { padding:.6rem .8rem; min-height:44px; }
       .opt-btn, .iq-choice-btn { min-height:52px; }
-      .ch-btn:active, .vtab:active, .action-btn:active, .icon-btn:active { transform:scale(.97); }
+      .ch-btn:active, .vtab:active, .action-btn:active, .icon-btn:active, .chapter-card:active { transform:scale(.98); }
     }
 
-    /* Chapter switch nav is transparent so its buttons flow inside the desktop rail */
-    .chapter-switch { display:contents; }
-
     @media print {
-      .topbar,.sidebar,.chapter-rail,.bottom-nav,.stats-bar,.action-menu,.fab,.menu-toggle,.chapter-sheet { display:none!important; }
+      .topbar,.chapter-bar,.sidebar,.bottom-nav,.stats-bar,.fab,.menu-toggle,.chapter-sheet,.chapter-tools { display:none!important; }
       .layout { grid-template-columns:1fr; padding:0; }
       .panel { display:block!important; }
       .quiz-answer { display:block!important; }
@@ -879,86 +953,98 @@
     }
   </style>
 </head>
-<body data-ch="1" data-quiz-mode="test">
+<body data-ch="1" data-quiz-mode="test" data-screen="home">
 
 <div class="read-progress" aria-hidden="true"><div class="read-progress-bar" id="readProgress"></div></div>
 
 <div class="sidebar-overlay" id="overlay"></div>
 
+<!-- Chapter quick-switch sheet -->
 <div class="chapter-sheet" id="chapterSheet" aria-hidden="true">
   <div class="chapter-sheet-backdrop" id="chapterSheetBackdrop"></div>
   <div class="chapter-sheet-panel">
     <div class="sheet-handle"></div>
-    <div class="sheet-title">اختر الفصل</div>
+    <div class="sheet-title">انتقل إلى فصل</div>
     <div class="chapter-grid" id="chapterSheetGrid"></div>
   </div>
 </div>
 
-<div class="action-menu" id="actionMenu" aria-hidden="true">
-  <button class="action-btn" id="showAll" type="button">👁 كل الإجابات</button>
-  <button class="action-btn" id="hideAll" type="button">🙈 إخفاء الإجابات</button>
-  <button class="action-btn" id="printBtn" type="button">🖨 طباعة</button>
-</div>
-
-<div class="app-shell">
-  <header class="topbar">
-    <div class="topbar-inner">
-      <button class="icon-btn menu-toggle" id="menuToggle" aria-label="فتح قائمة التنقل" type="button">☰</button>
-      <div class="brand brand-compact">
-        <h1 id="pageTitle">SDE601 — تنقيب البيانات</h1>
-        <p id="pageSubtitle">الفصل 1: مقدمة عن التنقيب في البيانات</p>
-      </div>
-      <button class="chapter-picker-btn" id="chapterPickerBtn" type="button" aria-label="اختيار الفصل">
+<!-- Top bar -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="brand" id="homeBtn" type="button" aria-label="الصفحة الرئيسية">
+      <span class="brand-logo">⛏️</span>
+      <span class="brand-text"><strong>تنقيب البيانات</strong><small>SDE601</small></span>
+    </button>
+    <div class="topbar-spacer"></div>
+    <div class="chapter-quick chapter-only">
+      <button class="chapter-quick-btn" id="chapterPickerBtn" type="button" aria-label="تبديل الفصل">
         <span class="ch-badge" id="currentChBadge">1</span>
-        <span>الفصل</span>
+        <span id="chapterQuickTitle">الفصل 1</span>
+        <span class="chev">▼</span>
       </button>
-      <button class="icon-btn" id="searchToggle" aria-label="بحث" type="button">🔍</button>
-      <button class="icon-btn action-menu-trigger" id="actionMenuBtn" aria-label="المزيد" type="button">⋮</button>
     </div>
-    <div class="search-panel" id="searchPanel">
-      <div class="search-panel-inner">
-        <div class="search-wrap">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          <input type="search" id="searchInput" placeholder="ابحث في التلخيص أو الأسئلة..." enterkeyhint="search" autocomplete="off">
-        </div>
+    <button class="icon-btn chapter-only" id="searchToggle" aria-label="بحث" type="button">🔍</button>
+    <button class="icon-btn chapter-only menu-toggle" id="menuToggle" aria-label="محتويات الفصل" type="button">☰</button>
+  </div>
+  <div class="search-panel" id="searchPanel">
+    <div class="search-panel-inner">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="search" id="searchInput" placeholder="ابحث في التلخيص أو الأسئلة..." enterkeyhint="search" autocomplete="off">
       </div>
     </div>
-    <div class="desktop-toolbar">
+  </div>
+</header>
+
+<!-- HOME SCREEN (chapter dashboard) -->
+<main class="home-screen" id="homeScreen"></main>
+
+<!-- CHAPTER SCREEN -->
+<div class="chapter-screen" id="chapterScreen">
+  <div class="chapter-bar">
+    <div class="chapter-bar-inner">
+      <button class="back-btn" id="backHome" type="button">→<span class="back-btn-label">كل الفصول</span></button>
+      <div class="chapter-bar-title">
+        <span class="cbt-badge" id="chapterBarBadge">1</span>
+        <div class="cbt-text"><strong id="chapterBarTitle"></strong><small id="chapterBarSubtitle"></small></div>
+      </div>
       <div class="view-tabs" role="tablist" aria-label="عرض المحتوى">
         <button class="vtab active" data-view="summary" type="button">📖 التلخيص</button>
         <button class="vtab" data-view="maps" type="button">🗺️ مخططات</button>
-        <button class="vtab" data-view="quiz" type="button">❓ الكويزات</button>
+        <button class="vtab" data-view="quiz" type="button">❓ كويز</button>
         <button class="vtab" data-view="flashcards" type="button">🃏 بطاقات</button>
       </div>
-      <div class="toolbar-actions">
-        <button class="action-btn" id="showAllDesktop" type="button">👁 كل الإجابات</button>
-        <button class="action-btn" id="hideAllDesktop" type="button">🙈 إخفاء</button>
-        <button class="action-btn" id="printBtnDesktop" type="button">🖨 طباعة</button>
+      <div class="chapter-tools">
+        <button class="icon-btn" id="toolsBtn" type="button" aria-label="أدوات الفصل">⋮</button>
+        <div class="tools-menu" id="toolsMenu">
+          <button class="action-btn" id="showAll" type="button">👁 إظهار كل الإجابات</button>
+          <button class="action-btn" id="hideAll" type="button">🙈 إخفاء الإجابات</button>
+          <button class="action-btn" id="printBtn" type="button">🖨 طباعة</button>
+        </div>
       </div>
     </div>
-  </header>
+  </div>
 
   <div class="stats-bar" id="statsBar"></div>
 
   <div class="layout">
     <aside class="sidebar" id="sidebar">
       <nav class="nav-panel">
-        <h3>التنقل السريع</h3>
+        <h3>محتويات الفصل</h3>
         <ul class="nav-list" id="navList"></ul>
       </nav>
     </aside>
     <main id="mainContent"></main>
-    <aside class="chapter-rail" id="chapterRail">
-      <div class="chapter-rail-label">الفصول</div>
-      <nav class="chapter-switch" id="chapterSwitch" aria-label="اختيار الفصل"></nav>
-    </aside>
   </div>
 
   <footer class="footer">SDE601 — تنقيب البيانات | مراجعة للامتحان | 20/06/2026</footer>
 </div>
 
-<nav class="bottom-nav" role="tablist" aria-label="عرض المحتوى">
-  <button class="vtab active" data-view="summary" type="button"><span class="nav-icon">📖</span><span>تلخيص</span></button>
+<!-- Bottom navigation (mobile) -->
+<nav class="bottom-nav" aria-label="التنقل الرئيسي">
+  <button class="bn-btn active" data-nav="home" type="button"><span class="nav-icon">🗂️</span><span>الفصول</span></button>
+  <button class="vtab" data-view="summary" type="button"><span class="nav-icon">📖</span><span>تلخيص</span></button>
   <button class="vtab" data-view="maps" type="button"><span class="nav-icon">🗺️</span><span>مخططات</span></button>
   <button class="vtab" data-view="quiz" type="button"><span class="nav-icon">❓</span><span>كويز</span></button>
   <button class="vtab" data-view="flashcards" type="button"><span class="nav-icon">🃏</span><span>بطاقات</span></button>

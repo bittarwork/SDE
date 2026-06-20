@@ -4531,6 +4531,15 @@ let state = loadState();
 let currentChapter = state.chapter || 1;
 let currentView = state.view || "summary";
 let quizMode = state.quizMode || "test";
+let currentScreen = state.screen || "home";
+
+/* Emoji per chapter for the home dashboard */
+const CH_ICONS = { 1: "🔍", 2: "🧹", 3: "🏛️", 4: "🧊", 5: "🔗", 6: "🏷️", 7: "📈", 8: "🎯", 9: "🧬" };
+
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
 
 // Per-chapter test answers: { "1-5": { selected: 2, correct: false } }
 if (!state.testAnswers) state.testAnswers = {};
@@ -4542,6 +4551,7 @@ function saveState() {
   const toSave = {
     chapter: state.chapter,
     view: state.view,
+    screen: state.screen,
     quizMode: state.quizMode,
     progress: state.progress,
     testAnswers: state.testAnswers,
@@ -4560,26 +4570,181 @@ function saveState() {
 function init() {
   applyChapterTheme();
   renderChapterSwitch();
-  renderStats();
-  renderNav();
-  renderMain();
+  renderHome();
+  if (currentScreen === "chapter") {
+    renderStats();
+    renderNav();
+    renderMain();
+  }
   bindGlobalEvents();
+  applyScreen();
   updateLayoutMetrics();
   updateReadProgress();
 }
 
+/* ── Screen management (home dashboard vs single chapter) ── */
+function applyScreen() {
+  document.body.dataset.screen = currentScreen;
+  document.querySelectorAll(".bottom-nav [data-nav='home']").forEach(b =>
+    b.classList.toggle("active", currentScreen === "home"));
+  syncViewTabs();
+}
+
+function goHome() {
+  currentScreen = "home";
+  state.screen = "home";
+  saveState();
+  renderHome();
+  applyScreen();
+  closeSidebar();
+  closeToolsMenu();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  requestAnimationFrame(updateLayoutMetrics);
+}
+
+function openChapter(id, view) {
+  currentChapter = id;
+  state.chapter = id;
+  currentScreen = "chapter";
+  state.screen = "chapter";
+  if (view) { currentView = view; state.view = view; }
+  chIqIndex = 0;
+  chIqScore = 0;
+  chIqAnswered = new Set();
+  saveState();
+  applyChapterTheme();
+  updateChapterQuick();
+  renderChapterSwitch();
+  renderStats();
+  renderNav();
+  renderMain();
+  applyScreen();
+  closeSidebar();
+  closeChapterSheet();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  requestAnimationFrame(updateLayoutMetrics);
+}
+
+function updateChapterQuick() {
+  const ch = CHAPTERS[currentChapter];
+  setText("currentChBadge", currentChapter);
+  setText("chapterQuickTitle", `الفصل ${currentChapter}`);
+  setText("chapterBarBadge", currentChapter);
+  setText("chapterBarTitle", `الفصل ${currentChapter}: ${ch.title}`);
+  setText("chapterBarSubtitle", ch.subtitle);
+}
+
+/* Aggregate quiz progress across all chapters */
+function getOverallProgress() {
+  let totalQ = 0, totalCorrect = 0, totalAttempted = 0, chaptersDone = 0;
+  Object.keys(CHAPTERS).forEach(id => {
+    const ts = getTestStats(+id);
+    totalQ += ts.total;
+    totalCorrect += ts.correct;
+    totalAttempted += ts.attempted;
+    if (ts.total && ts.pending === 0) chaptersDone++;
+  });
+  return {
+    totalQ, totalCorrect, totalAttempted, chaptersDone,
+    pct: totalQ ? Math.round((totalCorrect / totalQ) * 100) : 0,
+    attemptPct: totalQ ? Math.round((totalAttempted / totalQ) * 100) : 0
+  };
+}
+
+function renderHome() {
+  const home = document.getElementById("homeScreen");
+  if (!home) return;
+  const op = getOverallProgress();
+  const chapterCount = Object.keys(CHAPTERS).length;
+
+  const cards = Object.values(CHAPTERS).map(ch => {
+    const ts = getTestStats(ch.id);
+    const qCount = ts.total;
+    const secCount = ch.nav.length;
+    const fcCount = (ch.flashcards || []).length;
+    const last = state.lastTestScore?.[ch.id];
+    const pct = last != null ? last : (ts.attempted ? ts.pct : 0);
+    const progLabel = last != null ? `${last}%` : (ts.attempted ? `${ts.pct}%` : "0%");
+    return `
+      <button class="chapter-card" data-ch="${ch.id}" data-open-ch="${ch.id}" type="button">
+        <div class="chapter-card-top">
+          <div class="chapter-card-badge">${CH_ICONS[ch.id] || "📘"}<span class="ch-no">${ch.id}</span></div>
+          <div class="chapter-card-head">
+            <h3>${ch.title}</h3>
+            <p>${ch.subtitle}</p>
+          </div>
+        </div>
+        <div class="chapter-card-meta">
+          <span class="cc-chip">📖 ${secCount} قسم</span>
+          <span class="cc-chip">❓ ${qCount} سؤال</span>
+          <span class="cc-chip">🃏 ${fcCount} بطاقة</span>
+        </div>
+        <div class="chapter-card-foot">
+          <span class="cc-prog-track"><span class="cc-prog-bar" style="width:${pct}%"></span></span>
+          <span class="cc-prog-val">${progLabel}</span>
+        </div>
+      </button>`;
+  }).join("");
+
+  home.innerHTML = `
+    <section class="home-hero" data-ch="1">
+      <span class="home-hero-tag">⛏️ مراجعة شاملة للامتحان</span>
+      <h1>تنقيب البيانات — SDE601</h1>
+      <p>مرجع تفاعلي لكل فصول المادة: تلخيص منظّم، مخططات مفاهيمية، كويزات تصحَّح فوراً، وبطاقات مراجعة سريعة. اختر فصلاً للبدء.</p>
+      <div class="home-hero-stats">
+        <span class="hero-chip">📚 ${chapterCount} فصول</span>
+        <span class="hero-chip">❓ ${op.totalQ} سؤال</span>
+        <span class="hero-chip">✅ ${op.chaptersDone} فصل مكتمل</span>
+      </div>
+      <div class="hero-progress">
+        <div class="hero-progress-head">
+          <span>التقدّم الكلي في الكويزات</span>
+          <strong>${op.pct}%</strong>
+        </div>
+        <div class="hero-progress-track"><div class="hero-progress-bar" style="width:${op.pct}%"></div></div>
+      </div>
+    </section>
+
+    <div class="home-section-head">
+      <h2>الفصول</h2>
+      <span class="count-pill">${chapterCount} فصول</span>
+    </div>
+    <div class="chapter-cards">${cards}</div>
+  `;
+
+  bindHomeEvents();
+}
+
+function bindHomeEvents() {
+  document.querySelectorAll("#homeScreen [data-open-ch]").forEach(card => {
+    card.addEventListener("click", () => openChapter(+card.dataset.openCh));
+  });
+}
+
 function updateLayoutMetrics() {
+  const root = document.documentElement;
   const topbar = document.querySelector(".topbar");
+  const chapterBar = document.querySelector(".chapter-bar");
   const bottomNav = document.querySelector(".bottom-nav");
+
+  let topH = 60;
   if (topbar) {
-    const offset = Math.ceil(topbar.getBoundingClientRect().height) + 4;
-    document.documentElement.style.setProperty("--header-offset", `${offset}px`);
+    topH = Math.ceil(topbar.getBoundingClientRect().height);
+    root.style.setProperty("--topbar-h", `${topH}px`);
   }
+
+  // Scroll anchor offset = sticky topbar (+ sticky chapter bar when in a chapter)
+  let offset = topH + 4;
+  if (currentScreen === "chapter" && chapterBar) {
+    offset += Math.ceil(chapterBar.getBoundingClientRect().height);
+  }
+  root.style.setProperty("--header-offset", `${offset}px`);
+
   if (bottomNav && window.matchMedia("(max-width:1023px)").matches) {
     const navH = Math.ceil(bottomNav.getBoundingClientRect().height);
-    document.documentElement.style.setProperty("--bottom-nav-h", `${navH}px`);
+    root.style.setProperty("--bottom-nav-h", `${navH}px`);
   } else {
-    document.documentElement.style.setProperty("--bottom-nav-h", "0px");
+    root.style.setProperty("--bottom-nav-h", "0px");
   }
 }
 
@@ -4598,33 +4763,31 @@ function closeChapterSheet() {
 }
 
 function openChapterSheet() {
-  closeActionMenu();
+  closeToolsMenu();
   document.getElementById("chapterSheet")?.classList.add("open");
   document.body.classList.add("nav-open");
 }
 
-function closeActionMenu() {
-  document.getElementById("actionMenu")?.classList.remove("open");
+function closeToolsMenu() {
+  document.getElementById("toolsMenu")?.classList.remove("open");
 }
 
-function toggleActionMenu() {
+function toggleToolsMenu() {
   closeChapterSheet();
-  document.getElementById("actionMenu")?.classList.toggle("open");
+  document.getElementById("toolsMenu")?.classList.toggle("open");
 }
 
 function syncViewTabs() {
+  const active = currentScreen === "chapter";
   document.querySelectorAll(".vtab").forEach(v => {
-    v.classList.toggle("active", v.dataset.view === currentView);
+    v.classList.toggle("active", active && v.dataset.view === currentView);
   });
 }
 
 function applyChapterTheme() {
   document.body.dataset.ch = currentChapter;
   document.body.dataset.quizMode = quizMode;
-  const ch = CHAPTERS[currentChapter];
-  document.getElementById("pageSubtitle").textContent = `الفصل ${currentChapter}: ${ch.title}`;
-  const badge = document.getElementById("currentChBadge");
-  if (badge) badge.textContent = currentChapter;
+  updateChapterQuick();
 }
 
 function getChapterQuestions(ch) {
@@ -4654,49 +4817,22 @@ function getGrade(pct) {
 }
 
 function renderChapterSwitch() {
-  const chapterHTML = Object.values(CHAPTERS).map(ch => `
-    <button class="ch-btn ${ch.id === currentChapter ? "active" : ""}" data-ch="${ch.id}" type="button" aria-label="الفصل ${ch.id}: ${ch.title}">
-      <span class="ch-num">${ch.id}</span><span class="ch-label">الفصل ${ch.id}</span>
+  const sheet = document.getElementById("chapterSheetGrid");
+  if (!sheet) return;
+  sheet.innerHTML = Object.values(CHAPTERS).map(ch => `
+    <button class="ch-btn ${ch.id === currentChapter && currentScreen === "chapter" ? "active" : ""}" data-ch="${ch.id}" type="button" aria-label="الفصل ${ch.id}: ${ch.title}">
+      <span class="ch-num">${ch.id}</span><span class="ch-label">${ch.title}</span>
     </button>
   `).join("");
-
-  const rail = document.getElementById("chapterSwitch");
-  if (rail) {
-    rail.innerHTML = chapterHTML;
-    rail.querySelectorAll(".ch-btn").forEach(btn => {
-      btn.addEventListener("click", () => switchChapter(+btn.dataset.ch));
-    });
-  }
-
-  const sheet = document.getElementById("chapterSheetGrid");
-  if (sheet) {
-    sheet.innerHTML = chapterHTML;
-    sheet.querySelectorAll(".ch-btn").forEach(btn => {
-      btn.addEventListener("click", () => switchChapter(+btn.dataset.ch));
-    });
-  }
+  sheet.querySelectorAll(".ch-btn").forEach(btn => {
+    btn.addEventListener("click", () => switchChapter(+btn.dataset.ch));
+  });
 }
 
 function switchChapter(id) {
-  if (id === currentChapter) {
-    closeChapterSheet();
-    return;
-  }
-  currentChapter = id;
-  state.chapter = id;
-  chIqIndex = 0;
-  chIqScore = 0;
-  chIqAnswered = new Set();
-  saveState();
-  applyChapterTheme();
-  renderChapterSwitch();
-  renderStats();
-  renderNav();
-  renderMain();
-  requestAnimationFrame(updateLayoutMetrics);
-  window.scrollTo({ top: 0, behavior: "smooth" });
-  closeSidebar();
   closeChapterSheet();
+  if (id === currentChapter && currentScreen === "chapter") return;
+  openChapter(id);
 }
 
 function renderStats() {
@@ -5071,14 +5207,21 @@ function renderFlashcards(ch) {
 }
 
 function switchView(view) {
+  // From the home screen, tapping a view opens the current chapter on that view
+  if (currentScreen !== "chapter") {
+    openChapter(currentChapter, view);
+    return;
+  }
   currentView = view;
   state.view = view;
   saveState();
   syncViewTabs();
-  closeActionMenu();
+  closeToolsMenu();
   if (view === "maps") {
     renderNav();
     renderMain();
+    closeSidebar();
+    requestAnimationFrame(updateLayoutMetrics);
     return;
   }
   document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
@@ -5103,14 +5246,14 @@ function showAllAnswers() {
       markAnswered(b.dataset.qid);
     });
   }, 50);
-  closeActionMenu();
+  closeToolsMenu();
 }
 
 function hideAllAnswers() {
   if (quizMode !== "study") return;
   document.querySelectorAll(".quiz-answer").forEach(a => a.classList.remove("show"));
   document.querySelectorAll(".quiz-btn").forEach(b => b.textContent = "إظهار الإجابة");
-  closeActionMenu();
+  closeToolsMenu();
 }
 
 function bindGlobalEvents() {
@@ -5138,21 +5281,27 @@ function bindGlobalEvents() {
     if (open) setTimeout(() => document.getElementById("searchInput")?.focus(), 120);
   });
 
+  // Home / back navigation
+  document.getElementById("homeBtn")?.addEventListener("click", goHome);
+  document.getElementById("backHome")?.addEventListener("click", goHome);
+  document.querySelectorAll(".bottom-nav [data-nav='home']").forEach(b =>
+    b.addEventListener("click", goHome));
+
   document.getElementById("chapterPickerBtn")?.addEventListener("click", openChapterSheet);
   document.getElementById("chapterSheetBackdrop")?.addEventListener("click", closeChapterSheet);
 
   document.getElementById("showAll")?.addEventListener("click", showAllAnswers);
-  document.getElementById("showAllDesktop")?.addEventListener("click", showAllAnswers);
   document.getElementById("hideAll")?.addEventListener("click", hideAllAnswers);
-  document.getElementById("hideAllDesktop")?.addEventListener("click", hideAllAnswers);
-  document.getElementById("printBtn")?.addEventListener("click", () => { closeActionMenu(); window.print(); });
-  document.getElementById("printBtnDesktop")?.addEventListener("click", () => window.print());
+  document.getElementById("printBtn")?.addEventListener("click", () => { closeToolsMenu(); window.print(); });
 
-  document.getElementById("actionMenuBtn")?.addEventListener("click", toggleActionMenu);
+  document.getElementById("toolsBtn")?.addEventListener("click", e => { e.stopPropagation(); toggleToolsMenu(); });
+  document.addEventListener("click", e => {
+    if (!e.target.closest(".chapter-tools")) closeToolsMenu();
+  });
 
   document.getElementById("menuToggle")?.addEventListener("click", () => {
     closeChapterSheet();
-    closeActionMenu();
+    closeToolsMenu();
     const open = document.getElementById("sidebar").classList.toggle("open");
     document.getElementById("overlay").classList.toggle("open", open);
     document.body.classList.toggle("nav-open", open);
@@ -5191,7 +5340,7 @@ function closeSidebar() {
   document.getElementById("sidebar")?.classList.remove("open");
   document.getElementById("overlay")?.classList.remove("open");
   closeChapterSheet();
-  closeActionMenu();
+  closeToolsMenu();
   document.body.classList.remove("nav-open");
 }
 

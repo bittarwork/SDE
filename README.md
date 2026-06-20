@@ -24,10 +24,10 @@
 
 ```
 تنقيب بيانات/
-├── data-mining-study.html   ← نقطة الدخول — افتح هذا الملف
+├── index.html               ← نقطة الدخول — افتح هذا الملف
 ├── study-app.js             ← المحتوى الكامل + منطق التطبيق
 ├── concept-maps.js          ← المخططات المفاهيمية (فصل + مادة)
-├── chapter1-study.html      ← نسخة قديمة/منفصلة للفصل 1 (اختياري)
+├── .nojekyll                ← يمنع معالجة Jekyll على GitHub Pages
 └── README.md                ← هذا الملف
 ```
 
@@ -35,9 +35,29 @@
 
 ## التشغيل
 
-1. افتح `data-mining-study.html` في أي متصفح حديث (Chrome، Edge، Firefox، Safari).
+1. افتح `index.html` في أي متصفح حديث (Chrome، Edge، Firefox، Safari).
 2. لا حاجة لتثبيت Node.js أو npm.
 3. للموبايل: انسخ المجلد للجهاز وافتح الملف من متصفح الجوال، أو استضف المجلد على أي خادم ثابت.
+
+---
+
+## النشر على GitHub Pages
+
+1. أنشئ مستودعاً جديداً على GitHub (مثلاً `data-mining-review`).
+2. من داخل مجلد المشروع نفّذ الأوامر التالية (بدّل الرابط برابط مستودعك):
+
+```bash
+git init
+git add .
+git commit -m "Data mining study app"
+git branch -M main
+git remote add origin https://github.com/<username>/<repo>.git
+git push -u origin main
+```
+
+3. من صفحة المستودع على GitHub: **Settings → Pages**.
+4. تحت **Build and deployment** اختر **Source: Deploy from a branch**، ثم **Branch: `main` / `(root)`** واحفظ.
+5. انتظر دقيقة، وسيظهر رابط الموقع: `https://<username>.github.io/<repo>/`.
 
 ---
 
