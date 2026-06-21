@@ -4527,8 +4527,33 @@ function resetInteractiveBinding() {
 }
 
 /* ── State ── */
+/* Build the comprehensive pre-exam review as a virtual chapter (id 0).
+   It aggregates every quiz question and flashcard from all real chapters. */
+function buildReviewChapter() {
+  if (CHAPTERS[0] || typeof EXAM_REVIEW === "undefined") return;
+  const quiz = [];
+  const flashcards = [];
+  Object.values(CHAPTERS).forEach(ch => {
+    if (!ch || ch.id === 0) return;
+    ch.quiz.forEach(sec => {
+      quiz.push({ section: `الفصل ${ch.id} — ${sec.section}`, items: sec.items });
+    });
+    (ch.flashcards || []).forEach(fc => flashcards.push(fc));
+  });
+  CHAPTERS[0] = {
+    id: 0,
+    title: "المراجعة الشاملة قبل الامتحان",
+    subtitle: "ملخص + قوانين + كويز شامل لكل الفصول",
+    nav: EXAM_REVIEW.nav,
+    summaryHTML: EXAM_REVIEW.summaryHTML,
+    quiz,
+    flashcards
+  };
+}
+
 let state = loadState();
-let currentChapter = state.chapter || 1;
+buildReviewChapter();
+let currentChapter = state.chapter != null && CHAPTERS[state.chapter] ? state.chapter : 1;
 let currentView = state.view || "summary";
 let quizMode = state.quizMode || "test";
 let currentScreen = state.screen || "home";
@@ -4625,20 +4650,30 @@ function openChapter(id, view) {
   requestAnimationFrame(updateLayoutMetrics);
 }
 
+function chapterLabel() {
+  return currentChapter === 0 ? "المراجعة" : `الفصل ${currentChapter}`;
+}
+
 function updateChapterQuick() {
   const ch = CHAPTERS[currentChapter];
-  setText("currentChBadge", currentChapter);
-  setText("chapterQuickTitle", `الفصل ${currentChapter}`);
-  setText("chapterBarBadge", currentChapter);
-  setText("chapterBarTitle", `الفصل ${currentChapter}: ${ch.title}`);
+  const isReview = currentChapter === 0;
+  setText("currentChBadge", isReview ? "★" : currentChapter);
+  setText("chapterQuickTitle", isReview ? "المراجعة" : `الفصل ${currentChapter}`);
+  setText("chapterBarBadge", isReview ? "★" : currentChapter);
+  setText("chapterBarTitle", isReview ? ch.title : `الفصل ${currentChapter}: ${ch.title}`);
   setText("chapterBarSubtitle", ch.subtitle);
 }
 
-/* Aggregate quiz progress across all chapters */
+/* Real chapters only (excludes the virtual review chapter id 0) */
+function realChapters() {
+  return Object.values(CHAPTERS).filter(c => c && c.id !== 0);
+}
+
+/* Aggregate quiz progress across all real chapters */
 function getOverallProgress() {
   let totalQ = 0, totalCorrect = 0, totalAttempted = 0, chaptersDone = 0;
-  Object.keys(CHAPTERS).forEach(id => {
-    const ts = getTestStats(+id);
+  realChapters().forEach(ch => {
+    const ts = getTestStats(ch.id);
     totalQ += ts.total;
     totalCorrect += ts.correct;
     totalAttempted += ts.attempted;
@@ -4651,13 +4686,20 @@ function getOverallProgress() {
   };
 }
 
+function openReview() {
+  openChapter(0, "summary");
+}
+
 function renderHome() {
   const home = document.getElementById("homeScreen");
   if (!home) return;
   const op = getOverallProgress();
-  const chapterCount = Object.keys(CHAPTERS).length;
+  const chapters = realChapters();
+  const chapterCount = chapters.length;
+  const reviewTs = getTestStats(0);
+  const reviewPct = state.lastTestScore?.[0] != null ? state.lastTestScore[0] : (reviewTs.attempted ? reviewTs.pct : 0);
 
-  const cards = Object.values(CHAPTERS).map(ch => {
+  const cards = chapters.map(ch => {
     const ts = getTestStats(ch.id);
     const qCount = ts.total;
     const secCount = ch.nav.length;
@@ -4705,6 +4747,18 @@ function renderHome() {
       </div>
     </section>
 
+    <button class="review-cta" id="reviewCta" type="button">
+      <span class="review-cta-icon">★</span>
+      <span class="review-cta-body">
+        <strong>المراجعة الشاملة قبل الامتحان</strong>
+        <span class="review-cta-desc">ملخص كل المادة + شرح القوانين بأبسط شكل + كويز شامل لكل الفصول (${op.totalQ} سؤال).</span>
+        <span class="review-cta-foot">
+          <span class="review-cta-go">ابدأ المراجعة ←</span>
+          <span class="review-cta-prog"><span class="cc-prog-track"><span class="cc-prog-bar" style="width:${reviewPct}%"></span></span><span class="cc-prog-val">${reviewPct}%</span></span>
+        </span>
+      </span>
+    </button>
+
     <div class="home-section-head">
       <h2>الفصول</h2>
       <span class="count-pill">${chapterCount} فصول</span>
@@ -4716,6 +4770,7 @@ function renderHome() {
 }
 
 function bindHomeEvents() {
+  document.getElementById("reviewCta")?.addEventListener("click", openReview);
   document.querySelectorAll("#homeScreen [data-open-ch]").forEach(card => {
     card.addEventListener("click", () => openChapter(+card.dataset.openCh));
   });
@@ -4819,7 +4874,7 @@ function getGrade(pct) {
 function renderChapterSwitch() {
   const sheet = document.getElementById("chapterSheetGrid");
   if (!sheet) return;
-  sheet.innerHTML = Object.values(CHAPTERS).map(ch => `
+  sheet.innerHTML = realChapters().map(ch => `
     <button class="ch-btn ${ch.id === currentChapter && currentScreen === "chapter" ? "active" : ""}" data-ch="${ch.id}" type="button" aria-label="الفصل ${ch.id}: ${ch.title}">
       <span class="ch-num">${ch.id}</span><span class="ch-label">${ch.title}</span>
     </button>
@@ -4878,7 +4933,7 @@ function renderMain() {
       <div class="quiz-result-panel hidden" id="resultPanel"></div>
       <div class="progress-box">
         <div class="progress-meta">
-          <span id="progLabel">${quizMode === "test" ? "تقدم الإجابة" : "تقدم المراجعة"} — الفصل ${currentChapter}</span>
+          <span id="progLabel">${quizMode === "test" ? "تقدم الإجابة" : "تقدم المراجعة"} — ${chapterLabel()}</span>
           <span id="progText">${quizMode === "test" ? ts.attempted + " / " + totalQ : (prog.answered || 0) + " / " + totalQ}</span>
           ${quizMode === "test" && ts.attempted > 0 ? `<button class="link-btn test-only" id="clearAnswersInline" type="button">تفريغ والبدء من جديد</button>` : ""}
         </div>
@@ -4888,7 +4943,7 @@ function renderMain() {
     </div>
     <div class="panel ${currentView === "flashcards" ? "active" : ""}" id="panel-flashcards">
       <section class="section">
-        <h2>🃏 بطاقات الفصل ${currentChapter}</h2>
+        <h2>🃏 بطاقات ${chapterLabel()}</h2>
         <p style="color:var(--muted);margin-bottom:1rem;font-size:.88rem">اضغط لقلب البطاقة</p>
         <div class="fc-grid" id="fcRoot"></div>
       </section>
@@ -4940,7 +4995,7 @@ function bindQuizModeEvents() {
 }
 
 function resetCurrentTest() {
-  if (!confirm("تفريغ كل إجابات الفصل " + currentChapter + " والبدء من جديد؟")) return;
+  if (!confirm("تفريغ كل إجابات " + chapterLabel() + " والبدء من جديد؟")) return;
   delete state.testAnswers[currentChapter];
   if (state.lastTestScore) delete state.lastTestScore[currentChapter];
   saveState();
@@ -5094,7 +5149,7 @@ function showResultsPanel() {
       <div class="pct-text">${ts.pct}%</div>
     </div>
     <div class="result-grade" style="color:${grade.color}">${grade.label}</div>
-    <div class="result-detail">الفصل ${currentChapter}: ${CHAPTERS[currentChapter].title}</div>
+    <div class="result-detail">${currentChapter === 0 ? CHAPTERS[0].title : "الفصل " + currentChapter + ": " + CHAPTERS[currentChapter].title}</div>
     <div class="result-breakdown">
       <div class="rb-item"><div class="rb-val green">${ts.correct}</div><div class="rb-lbl">صحيح</div></div>
       <div class="rb-item"><div class="rb-val red">${ts.wrong}</div><div class="rb-lbl">خطأ</div></div>
@@ -5135,7 +5190,7 @@ function updateTestUI() {
   if (quizMode === "test") {
     if (el) el.textContent = `${ts.attempted} / ${total}`;
     if (bar) bar.style.width = total ? `${(ts.attempted / total) * 100}%` : "0%";
-    if (label) label.textContent = `تقدم الإجابة — الفصل ${currentChapter}`;
+    if (label) label.textContent = `تقدم الإجابة — ${chapterLabel()}`;
   } else {
     updateProgressUI();
   }
@@ -5323,6 +5378,7 @@ function bindGlobalEvents() {
   document.addEventListener("keydown", e => {
     if (e.target.matches("input, textarea")) return;
     if (e.key === "Escape") { closeSidebar(); return; }
+    if (e.key === "0") openReview();
     if (e.key === "1") switchChapter(1);
     if (e.key === "2") switchChapter(2);
     if (e.key === "3") switchChapter(3);
